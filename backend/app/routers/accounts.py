@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.database.connection import get_db
 from app.models.account import Account
+from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
 
@@ -19,7 +20,7 @@ def _get_owned_account(db: Session, account_id: str, user_id: str) -> Account:
 
 @router.get("", response_model=list[AccountResponse])
 def list_accounts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(Account).filter(Account.user_id == current_user.id).all()
+    return db.query(Account).filter(Account.user_id == current_user.id).order_by(Account.created_at.desc()).all()
 
 
 @router.post("", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
@@ -66,5 +67,6 @@ def delete_account(
     current_user: User = Depends(get_current_user),
 ):
     account = _get_owned_account(db, account_id, current_user.id)
+    db.query(Transaction).filter(Transaction.account_id == account_id).update({"account_id": None})
     db.delete(account)
     db.commit()

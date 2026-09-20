@@ -5,7 +5,7 @@ export async function fetchDashboardSummary() {
   return data;
 }
 
-export async function fetchDashboardTrends(months = 6) {
+export async function fetchDashboardTrends(months = 10) {
   const { data } = await api.get("/dashboard/trends", { params: { months } });
   return data;
 }
