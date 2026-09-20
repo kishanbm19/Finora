@@ -25,10 +25,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # 7 days
 
     # CORS
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ]
+CORS_ORIGINS: list[str] = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://finora-e6hv0tse7-kishanbm19s-projects.vercel.app",
+]
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
