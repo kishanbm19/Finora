@@ -27,7 +27,7 @@ export default function Dashboard() {
           value={formatCurrency(summary.net_profit)}
           tone={summary.net_profit >= 0 ? "success" : "danger"}
         />
-        <SummaryCard label="Cash Balance" value={formatCurrency(summary.cash_balance)} />
+        <SummaryCard label="Net Balance" value={formatCurrency(summary.cash_balance)} />
       </div>
 
       <div className="grid grid-4" style={{ marginBottom: 20 }}>

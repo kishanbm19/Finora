@@ -30,3 +30,13 @@ class Transaction(Base):
 
     owner = relationship("User", back_populates="transactions")
     account = relationship("Account", back_populates="transactions")
+
+    @property
+    def account_name(self) -> str | None:
+        return self.account.name if self.account else None
+
+    @property
+    def account_type(self) -> str | None:
+        if self.account and self.account.account_type:
+            return self.account.account_type.value if hasattr(self.account.account_type, "value") else str(self.account.account_type)
+        return None
