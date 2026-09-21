@@ -30,6 +30,16 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     """Create all tables. Used for local/dev bootstrap; production uses Alembic."""
+    from sqlalchemy import text
     from app.database.base import Base
 
     Base.metadata.create_all(bind=engine)
+
+    # Safe migration check for SQLite dev environment
+    if settings.DATABASE_URL.startswith("sqlite"):
+        with engine.connect() as conn:
+            try:
+                conn.execute(text("ALTER TABLE transactions ADD COLUMN customer_id VARCHAR(36) REFERENCES customers(id)"))
+                conn.commit()
+            except Exception:
+                pass  # column already exists or table freshly created

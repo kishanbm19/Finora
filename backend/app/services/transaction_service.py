@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.account import Account, AccountType
+from app.models.customer import Customer
 from app.models.transaction import Transaction, TransactionType
 from app.schemas.transaction import TransactionCreate, TransactionUpdate
 
@@ -57,6 +58,11 @@ def create_transaction(db: Session, user_id: str, payload: TransactionCreate) ->
 
     data["account_id"] = _resolve_account_id(db, user_id, data.get("account_id"))
 
+    if data.get("customer_id"):
+        cust = db.get(Customer, data["customer_id"])
+        if not cust or cust.user_id != user_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected customer not found or unauthorized")
+
     transaction = Transaction(user_id=user_id, **data)
     db.add(transaction)
 
@@ -71,7 +77,7 @@ def create_transaction(db: Session, user_id: str, payload: TransactionCreate) ->
 def get_owned_transaction(db: Session, transaction_id: str, user_id: str) -> Transaction:
     transaction = (
         db.query(Transaction)
-        .options(joinedload(Transaction.account))
+        .options(joinedload(Transaction.account), joinedload(Transaction.customer))
         .filter(Transaction.id == transaction_id)
         .first()
     )
@@ -88,16 +94,19 @@ def list_transactions(
     type_filter: TransactionType | None = None,
     category: str | None = None,
     account_id: str | None = None,
+    customer_id: str | None = None,
 ) -> list[Transaction]:
     query = (
         db.query(Transaction)
-        .options(joinedload(Transaction.account))
+        .options(joinedload(Transaction.account), joinedload(Transaction.customer))
         .filter(Transaction.user_id == user_id)
     )
     if type_filter:
         query = query.filter(Transaction.type == type_filter)
     if category:
         query = query.filter(Transaction.category == category)
+    if customer_id:
+        query = query.filter(Transaction.customer_id == customer_id)
     if account_id:
         if account_id.lower() == "cash":
             query = query.join(Transaction.account).filter(Account.account_type == AccountType.CASH)
@@ -116,6 +125,11 @@ def update_transaction(db: Session, transaction: Transaction, payload: Transacti
     update_data = payload.model_dump(exclude_unset=True)
     if "account_id" in update_data:
         update_data["account_id"] = _resolve_account_id(db, transaction.user_id, update_data.get("account_id"))
+
+    if update_data.get("customer_id"):
+        cust = db.get(Customer, update_data["customer_id"])
+        if not cust or cust.user_id != transaction.user_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected customer not found or unauthorized")
 
     for field, value in update_data.items():
         setattr(transaction, field, value)

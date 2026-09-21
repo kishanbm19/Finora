@@ -29,3 +29,8 @@ class CustomerResponse(CustomerBase):
     id: str
     user_id: str
     created_at: datetime
+    total_invoiced: float = 0.0
+    total_paid: float = 0.0
+    outstanding_balance: float = 0.0
+    invoice_count: int = 0
+    transaction_count: int = 0

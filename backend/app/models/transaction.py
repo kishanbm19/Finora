@@ -19,6 +19,7 @@ class Transaction(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("accounts.id"), nullable=True)
+    customer_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("customers.id"), nullable=True, index=True)
 
     type: Mapped[TransactionType] = mapped_column(Enum(TransactionType), nullable=False)
     category: Mapped[str] = mapped_column(String(100), nullable=False, default="general")
@@ -30,6 +31,7 @@ class Transaction(Base):
 
     owner = relationship("User", back_populates="transactions")
     account = relationship("Account", back_populates="transactions")
+    customer = relationship("Customer", back_populates="transactions")
 
     @property
     def account_name(self) -> str | None:
@@ -40,3 +42,7 @@ class Transaction(Base):
         if self.account and self.account.account_type:
             return self.account.account_type.value if hasattr(self.account.account_type, "value") else str(self.account.account_type)
         return None
+
+    @property
+    def customer_name(self) -> str | None:
+        return self.customer.name if self.customer else None

@@ -49,8 +49,11 @@ def list_invoices(
     skip: int = 0,
     limit: int = 100,
     status_filter: InvoiceStatus | None = None,
+    customer_id: str | None = None,
 ) -> list[Invoice]:
     query = db.query(Invoice).filter(Invoice.user_id == user_id)
+    if customer_id:
+        query = query.filter(Invoice.customer_id == customer_id)
     if status_filter:
         query = query.filter(Invoice.status == status_filter)
 

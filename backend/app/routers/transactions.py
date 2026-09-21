@@ -18,10 +18,11 @@ def list_transactions(
     type: TransactionType | None = Query(default=None),
     category: str | None = None,
     account_id: str | None = Query(default=None),
+    customer_id: str | None = Query(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return transaction_service.list_transactions(db, current_user.id, skip, limit, type, category, account_id)
+    return transaction_service.list_transactions(db, current_user.id, skip, limit, type, category, account_id, customer_id)
 
 
 @router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)

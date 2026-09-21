@@ -1,4 +1,4 @@
-export default function Modal({ title, isOpen, onClose, children, footer }) {
+export default function Modal({ title, isOpen, onClose, children, footer, width = 480 }) {
   if (!isOpen) return null;
 
   return (
@@ -11,12 +11,13 @@ export default function Modal({ title, isOpen, onClose, children, footer }) {
         alignItems: "center",
         justifyContent: "center",
         zIndex: 100,
+        padding: 16,
       }}
       onClick={onClose}
     >
       <div
         className="card"
-        style={{ width: 480, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto" }}
+        style={{ width, maxWidth: "95vw", maxHeight: "88vh", overflowY: "auto" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
