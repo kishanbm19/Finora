@@ -67,9 +67,39 @@ export default function Accounts() {
   };
 
   const columns = [
-    { key: "name", header: "Name" },
-    { key: "account_type", header: "Type" },
-    { key: "balance", header: "Balance", render: (row) => formatCurrency(row.balance, row.currency) },
+    { key: "name", header: "Name", render: (row) => <strong>{row.name}</strong> },
+    {
+      key: "account_type",
+      header: "Type",
+      render: (row) => {
+        const typeIcons = {
+          cash: "💵",
+          bank: "🏦",
+          credit_card: "💳",
+          savings: "💰",
+          other: "📁",
+        };
+        return (
+          <span className="account-tag" style={{ textTransform: "capitalize", background: "#f1f5f9" }}>
+            {typeIcons[row.account_type] || "🏦"} {row.account_type.replace("_", " ")}
+          </span>
+        );
+      },
+    },
+    {
+      key: "balance",
+      header: "Balance",
+      render: (row) => (
+        <span
+          style={{
+            fontWeight: 600,
+            color: row.balance < 0 ? "var(--color-danger)" : "inherit",
+          }}
+        >
+          {formatCurrency(row.balance, row.currency)}
+        </span>
+      ),
+    },
     { key: "currency", header: "Currency" },
     {
       key: "actions",

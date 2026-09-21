@@ -1,11 +1,44 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.models.account import Account
+from app.models.account import Account, AccountType
 from app.models.transaction import Transaction, TransactionType
 from app.schemas.transaction import TransactionCreate, TransactionUpdate
+
+
+def _resolve_account_id(db: Session, user_id: str, account_id: str | None) -> str | None:
+    """Resolve account ID, creating a default cash account if 'cash' is requested."""
+    if not account_id or not str(account_id).strip():
+        return None
+    
+    clean_id = str(account_id).strip()
+    if clean_id.lower() == "cash":
+        cash_acc = (
+            db.query(Account)
+            .filter(Account.user_id == user_id, Account.account_type == AccountType.CASH)
+            .first()
+        )
+        if not cash_acc:
+            cash_acc = Account(
+                user_id=user_id,
+                name="Cash",
+                account_type=AccountType.CASH,
+                balance=0.0,
+                currency="USD",
+            )
+            db.add(cash_acc)
+            db.flush()
+        return cash_acc.id
+
+    account = db.get(Account, clean_id)
+    if not account or account.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Selected account not found or unauthorized",
+        )
+    return account.id
 
 
 def _apply_balance_delta(db: Session, account_id: str | None, delta: float) -> None:
@@ -22,6 +55,8 @@ def create_transaction(db: Session, user_id: str, payload: TransactionCreate) ->
     if not data.get("transaction_date"):
         data["transaction_date"] = datetime.now(timezone.utc).date()
 
+    data["account_id"] = _resolve_account_id(db, user_id, data.get("account_id"))
+
     transaction = Transaction(user_id=user_id, **data)
     db.add(transaction)
 
@@ -34,7 +69,12 @@ def create_transaction(db: Session, user_id: str, payload: TransactionCreate) ->
 
 
 def get_owned_transaction(db: Session, transaction_id: str, user_id: str) -> Transaction:
-    transaction = db.get(Transaction, transaction_id)
+    transaction = (
+        db.query(Transaction)
+        .options(joinedload(Transaction.account))
+        .filter(Transaction.id == transaction_id)
+        .first()
+    )
     if not transaction or transaction.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     return transaction
@@ -47,12 +87,24 @@ def list_transactions(
     limit: int = 100,
     type_filter: TransactionType | None = None,
     category: str | None = None,
+    account_id: str | None = None,
 ) -> list[Transaction]:
-    query = db.query(Transaction).filter(Transaction.user_id == user_id)
+    query = (
+        db.query(Transaction)
+        .options(joinedload(Transaction.account))
+        .filter(Transaction.user_id == user_id)
+    )
     if type_filter:
         query = query.filter(Transaction.type == type_filter)
     if category:
         query = query.filter(Transaction.category == category)
+    if account_id:
+        if account_id.lower() == "cash":
+            query = query.join(Transaction.account).filter(Account.account_type == AccountType.CASH)
+        elif account_id == "unassigned":
+            query = query.filter(Transaction.account_id.is_(None))
+        else:
+            query = query.filter(Transaction.account_id == account_id)
     return query.order_by(Transaction.transaction_date.desc()).offset(skip).limit(limit).all()
 
 
@@ -61,7 +113,11 @@ def update_transaction(db: Session, transaction: Transaction, payload: Transacti
     old_signed = transaction.amount if transaction.type == TransactionType.INCOME else -transaction.amount
     _apply_balance_delta(db, transaction.account_id, -old_signed)
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    update_data = payload.model_dump(exclude_unset=True)
+    if "account_id" in update_data:
+        update_data["account_id"] = _resolve_account_id(db, transaction.user_id, update_data.get("account_id"))
+
+    for field, value in update_data.items():
         setattr(transaction, field, value)
 
     new_signed = transaction.amount if transaction.type == TransactionType.INCOME else -transaction.amount

@@ -34,3 +34,5 @@ class TransactionResponse(TransactionBase):
     user_id: str
     transaction_date: date
     created_at: datetime
+    account_name: str | None = None
+    account_type: str | None = None
