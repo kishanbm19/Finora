@@ -16,10 +16,11 @@ def list_invoices(
     skip: int = 0,
     limit: int = 100,
     status: InvoiceStatus | None = Query(default=None),
+    customer_id: str | None = Query(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return invoice_service.list_invoices(db, current_user.id, skip, limit, status)
+    return invoice_service.list_invoices(db, current_user.id, skip, limit, status, customer_id)
 
 
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)

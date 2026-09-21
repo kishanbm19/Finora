@@ -7,6 +7,7 @@ import {
   deleteTransaction,
 } from "../services/transactionService";
 import { listAccounts } from "../services/accountService";
+import { listCustomers } from "../services/customerService";
 import { formatCurrency } from "../utils/formatCurrency";
 import { formatDate } from "../utils/formatDate";
 import { TRANSACTION_TYPES } from "../lib/constants";
@@ -23,11 +24,13 @@ const emptyForm = {
   description: "",
   transaction_date: "",
   account_id: "cash",
+  customer_id: "",
 };
 
 export default function Transactions() {
   const [filterAccountId, setFilterAccountId] = useState("");
   const { data: accounts, refetch: refetchAccounts } = useFetch(() => listAccounts(), []);
+  const { data: customers } = useFetch(() => listCustomers(), []);
   const {
     data: transactions,
     loading,
@@ -59,6 +62,7 @@ export default function Transactions() {
       description: tx.description || "",
       transaction_date: tx.transaction_date || "",
       account_id: tx.account_id || (tx.account_type === "cash" ? "cash" : ""),
+      customer_id: tx.customer_id || "",
     });
     setError("");
     setModalOpen(true);
@@ -80,6 +84,7 @@ export default function Transactions() {
         ...form,
         amount: Number(form.amount),
         account_id: resolvedAccountId,
+        customer_id: form.customer_id || null,
       };
       if (!payload.transaction_date) delete payload.transaction_date;
 
@@ -165,7 +170,29 @@ export default function Transactions() {
       },
     },
     { key: "category", header: "Category" },
-    { key: "description", header: "Description", render: (row) => row.description || "—" },
+    {
+      key: "description",
+      header: "Description / Customer",
+      render: (row) => (
+        <div>
+          <div>{row.description || "—"}</div>
+          {row.customer_name && (
+            <span
+              className="account-tag"
+              style={{
+                background: "#eff6ff",
+                color: "#1d4ed8",
+                borderColor: "#bfdbfe",
+                fontSize: 11,
+                marginTop: 3,
+              }}
+            >
+              👤 {row.customer_name}
+            </span>
+          )}
+        </div>
+      ),
+    },
     {
       key: "amount",
       header: "Amount",
@@ -360,6 +387,27 @@ export default function Transactions() {
             placeholder="e.g., Supplies, Utilities, Client Payment"
             required
           />
+
+          <div className="form-group">
+            <label>Customer (Optional)</label>
+            <select
+              className="input"
+              name="customer_id"
+              value={form.customer_id || ""}
+              onChange={handleChange}
+            >
+              <option value="">-- No Customer (General) --</option>
+              {customers &&
+                customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    👤 {c.name} {c.company ? `(${c.company})` : ""}
+                  </option>
+                ))}
+            </select>
+            <span className="helper-text">
+              Link this transaction to a specific customer's transaction logs.
+            </span>
+          </div>
 
           <Input
             label="Description"

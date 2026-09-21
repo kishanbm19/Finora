@@ -12,6 +12,7 @@ class TransactionBase(BaseModel):
     description: str | None = None
     transaction_date: date | None = None
     account_id: str | None = None
+    customer_id: str | None = None
 
 
 class TransactionCreate(TransactionBase):
@@ -25,6 +26,7 @@ class TransactionUpdate(BaseModel):
     description: str | None = None
     transaction_date: date | None = None
     account_id: str | None = None
+    customer_id: str | None = None
 
 
 class TransactionResponse(TransactionBase):
@@ -36,3 +38,4 @@ class TransactionResponse(TransactionBase):
     created_at: datetime
     account_name: str | None = None
     account_type: str | None = None
+    customer_name: str | None = None
