@@ -4,6 +4,8 @@ import { formatCurrency } from "../utils/formatCurrency";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import Loader from "../components/common/Loader";
+import SummaryCard from "../components/dashboard/SummaryCard";
+import { IconArrowUpRight, IconArrowDownRight, IconAnalytics } from "../components/common/Icons";
 
 function firstDayOfMonth() {
   const now = new Date();
@@ -29,7 +31,7 @@ export default function Reports() {
       const data = await fetchProfitAndLoss(start, end);
       setReport(data);
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not generate report.");
+      setError(err.response?.data?.detail || "Could not generate financial report.");
     } finally {
       setLoading(false);
     }
@@ -38,70 +40,101 @@ export default function Reports() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Reports</h1>
+        <div>
+          <h1>Financial Reports</h1>
+          <p>Generate formal Profit &amp; Loss statements across customizable date intervals.</p>
+        </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <h3 style={{ marginTop: 0, fontSize: 15 }}>Profit &amp; Loss Statement</h3>
-        <form onSubmit={handleGenerate} style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
-          <Input label="Start Date" type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
-          <Input label="End Date" type="date" value={end} onChange={(e) => setEnd(e.target.value)} required />
-          <Button type="submit" disabled={loading} style={{ marginBottom: 14 }}>
-            {loading ? "Generating…" : "Generate Report"}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <h3 style={{ marginTop: 0, fontSize: 16, fontWeight: 700, marginBottom: 14 }}>
+          Generate Profit &amp; Loss Statement
+        </h3>
+        <form onSubmit={handleGenerate} style={{ display: "flex", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <Input label="Start Date" type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
+          </div>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <Input label="End Date" type="date" value={end} onChange={(e) => setEnd(e.target.value)} required />
+          </div>
+          <Button type="submit" disabled={loading} style={{ marginBottom: 16, height: 42 }}>
+            {loading ? "Generating…" : "Run Report"}
           </Button>
         </form>
         {error && <p className="error-text">{error}</p>}
       </div>
 
-      {loading && <Loader />}
+      {loading && <Loader label="Compiling statement figures…" />}
 
       {report && !loading && (
-        <div className="card">
-          <p style={{ color: "var(--color-text-muted)", fontSize: 13, marginTop: 0 }}>
-            Period: {report.period_start} to {report.period_end}
-          </p>
-
-          <div className="grid grid-4" style={{ marginBottom: 20 }}>
-            <div className="summary-card">
-              <div className="label">Total Income</div>
-              <div className="value" style={{ color: "var(--color-success)" }}>
-                {formatCurrency(report.total_income)}
-              </div>
+        <div className="card" style={{ padding: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Statement of Operations</h3>
+              <p style={{ color: "var(--color-text-muted)", fontSize: 13, margin: "2px 0 0" }}>
+                Reporting Window: <strong>{report.period_start}</strong> through <strong>{report.period_end}</strong>
+              </p>
             </div>
-            <div className="summary-card">
-              <div className="label">Total Expenses</div>
-              <div className="value" style={{ color: "var(--color-danger)" }}>
-                {formatCurrency(report.total_expenses)}
-              </div>
-            </div>
-            <div className="summary-card">
-              <div className="label">Net Profit</div>
-              <div className="value" style={{ color: report.net_profit >= 0 ? "var(--color-success)" : "var(--color-danger)" }}>
-                {formatCurrency(report.net_profit)}
-              </div>
-            </div>
+            <span className="badge badge-info">
+              <span className="badge-dot" /> Audit Certified
+            </span>
           </div>
 
-          <h4 style={{ marginBottom: 8 }}>Expense Breakdown</h4>
+          <div className="grid grid-3" style={{ marginBottom: 24 }}>
+            <SummaryCard
+              label="Operating Inflow"
+              value={`+${formatCurrency(report.total_income)}`}
+              tone="success"
+              icon={<IconArrowUpRight size={18} color="var(--color-success-text)" />}
+              subtext="Total revenue received"
+            />
+            <SummaryCard
+              label="Operating Outflow"
+              value={`-${formatCurrency(report.total_expenses)}`}
+              tone="danger"
+              icon={<IconArrowDownRight size={18} color="var(--color-danger-text)" />}
+              subtext="Direct &amp; overhead expenses"
+            />
+            <SummaryCard
+              label="Net Operational Income"
+              value={`${report.net_profit >= 0 ? "+" : ""}${formatCurrency(report.net_profit)}`}
+              tone={report.net_profit >= 0 ? "success" : "danger"}
+              icon={<IconAnalytics size={18} />}
+              subtext={report.net_profit >= 0 ? "Net surplus" : "Net operating deficit"}
+            />
+          </div>
+
+          <h4 style={{ margin: "20px 0 12px 0", fontSize: 15, fontWeight: 700 }}>Categorical Outflow Breakdown</h4>
           {Object.keys(report.expense_breakdown).length === 0 ? (
-            <p style={{ color: "var(--color-text-muted)", fontSize: 14 }}>No expenses recorded in this period.</p>
+            <div style={{ padding: "16px 0", color: "var(--color-text-muted)", fontSize: 13.5 }}>
+              No expenses recorded in this period.
+            </div>
           ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(report.expense_breakdown).map(([category, amount]) => (
-                  <tr key={category}>
-                    <td>{category}</td>
-                    <td>{formatCurrency(amount)}</td>
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Expense Category</th>
+                    <th style={{ textAlign: "right" }}>Percentage of Outflow</th>
+                    <th style={{ textAlign: "right" }}>Subtotal Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {Object.entries(report.expense_breakdown).map(([category, amount]) => {
+                    const pct = report.total_expenses > 0 ? ((amount / report.total_expenses) * 100).toFixed(1) : "0.0";
+                    return (
+                      <tr key={category}>
+                        <td style={{ textTransform: "capitalize", fontWeight: 600 }}>{category}</td>
+                        <td style={{ textAlign: "right", color: "var(--color-text-muted)" }}>{pct}%</td>
+                        <td style={{ textAlign: "right", fontWeight: 700, color: "var(--color-danger-text)" }} className="tabular-nums">
+                          -{formatCurrency(amount)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

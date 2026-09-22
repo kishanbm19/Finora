@@ -8,6 +8,7 @@ import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
 import Input from "../components/common/Input";
 import Loader from "../components/common/Loader";
+import { IconPlus, IconEdit, IconTrash, IconBank, IconWallet } from "../components/common/Icons";
 
 const emptyForm = { name: "", account_type: "bank", balance: "", currency: "USD" };
 
@@ -66,50 +67,104 @@ export default function Accounts() {
     refetch();
   };
 
+  const totalBalance = (accounts || []).reduce((sum, a) => sum + (a.balance || 0), 0);
+  const bankBalance = (accounts || [])
+    .filter((a) => a.account_type !== "cash")
+    .reduce((sum, a) => sum + (a.balance || 0), 0);
+  const cashBalance = (accounts || [])
+    .filter((a) => a.account_type === "cash")
+    .reduce((sum, a) => sum + (a.balance || 0), 0);
+
   const columns = [
-    { key: "name", header: "Name", render: (row) => <strong>{row.name}</strong> },
+    {
+      key: "name",
+      header: "Account Name",
+      render: (row) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: row.account_type === "cash" ? "#ecfdf5" : "#eff6ff",
+              color: row.account_type === "cash" ? "#047857" : "#4f46e5",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {row.account_type === "cash" ? <IconWallet size={16} /> : <IconBank size={16} />}
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, color: "var(--color-text)" }}>{row.name}</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-muted)", textTransform: "capitalize" }}>
+              {row.account_type.replace("_", " ")}
+            </div>
+          </div>
+        </div>
+      ),
+    },
     {
       key: "account_type",
       header: "Type",
-      render: (row) => {
-        const typeIcons = {
-          cash: "💵",
-          bank: "🏦",
-          credit_card: "💳",
-          savings: "💰",
-          other: "📁",
-        };
-        return (
-          <span className="account-tag" style={{ textTransform: "capitalize", background: "#f1f5f9" }}>
-            {typeIcons[row.account_type] || "🏦"} {row.account_type.replace("_", " ")}
-          </span>
-        );
-      },
+      render: (row) => (
+        <span
+          className="badge"
+          style={{
+            background: row.account_type === "cash" ? "#f0fdf4" : "#f1f5f9",
+            color: row.account_type === "cash" ? "#15803d" : "#475569",
+            textTransform: "capitalize",
+          }}
+        >
+          {row.account_type.replace("_", " ")}
+        </span>
+      ),
     },
     {
       key: "balance",
-      header: "Balance",
+      header: "Current Balance",
+      align: "right",
       render: (row) => (
         <span
           style={{
-            fontWeight: 600,
-            color: row.balance < 0 ? "var(--color-danger)" : "inherit",
+            fontWeight: 700,
+            fontSize: 14,
+            color: row.balance < 0 ? "var(--color-danger-text)" : "var(--color-text)",
           }}
         >
           {formatCurrency(row.balance, row.currency)}
         </span>
       ),
     },
-    { key: "currency", header: "Currency" },
+    {
+      key: "currency",
+      header: "Currency",
+      render: (row) => (
+        <span style={{ fontWeight: 600, color: "var(--color-text-muted)", fontSize: 12 }}>
+          {row.currency || "USD"}
+        </span>
+      ),
+    },
     {
       key: "actions",
       header: "",
+      align: "right",
       render: (row) => (
-        <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="secondary" onClick={() => openEditModal(row)}>
+        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => openEditModal(row)}
+            icon={<IconEdit size={14} />}
+          >
             Edit
           </Button>
-          <Button variant="danger" onClick={() => handleDelete(row.id)}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => handleDelete(row.id)}
+            icon={<IconTrash size={14} />}
+          >
             Delete
           </Button>
         </div>
@@ -117,28 +172,55 @@ export default function Accounts() {
     },
   ];
 
-  const totalBalance = (accounts || []).reduce((sum, a) => sum + a.balance, 0);
-
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Accounts</h1>
-        <Button onClick={openCreateModal}>+ Add Account</Button>
+        <div>
+          <h1>Accounts</h1>
+          <p>Bank accounts, cash registers, cards, and liquid capital reservoirs.</p>
+        </div>
+        <Button onClick={openCreateModal} icon={<IconPlus size={16} />}>
+          Add Account
+        </Button>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="summary-card">
-          <div className="label">Total Balance Across Accounts</div>
-          <div className="value">{formatCurrency(totalBalance)}</div>
+      {/* KPI Cards */}
+      <div className="grid grid-3" style={{ marginBottom: 20 }}>
+        <div className="summary-card tone-primary" style={{ padding: 18 }}>
+          <div className="summary-card-header">
+            <span className="label">Total Consolidated Liquidity</span>
+          </div>
+          <div className="value" style={{ fontSize: 24 }}>{formatCurrency(totalBalance)}</div>
+          <div className="sub-hint">Sum of all accounts &amp; in-hand cash</div>
+        </div>
+
+        <div className="summary-card tone-default" style={{ padding: 18 }}>
+          <div className="summary-card-header">
+            <span className="label">Bank &amp; Financial Institutions</span>
+          </div>
+          <div className="value" style={{ fontSize: 24 }}>{formatCurrency(bankBalance)}</div>
+          <div className="sub-hint">Checking, savings &amp; card accounts</div>
+        </div>
+
+        <div className="summary-card tone-success" style={{ padding: 18 }}>
+          <div className="summary-card-header">
+            <span className="label">In-Hand Cash Reserves</span>
+          </div>
+          <div className="value" style={{ fontSize: 24 }}>{formatCurrency(cashBalance)}</div>
+          <div className="sub-hint">Physical drawers &amp; petty cash</div>
         </div>
       </div>
 
-      <div className="card">
-        {loading ? <Loader /> : <Table columns={columns} data={accounts} emptyMessage="No accounts yet." />}
+      <div className="card" style={{ padding: 0 }}>
+        {loading ? (
+          <Loader label="Loading accounts…" />
+        ) : (
+          <Table columns={columns} data={accounts} emptyMessage="No financial accounts registered yet." />
+        )}
       </div>
 
       <Modal
-        title={editingId ? "Edit Account" : "Add Account"}
+        title={editingId ? "Edit Account" : "Add Financial Account"}
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
         footer={
@@ -147,15 +229,22 @@ export default function Accounts() {
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={saving}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? "Saving…" : editingId ? "Update Account" : "Create Account"}
             </Button>
           </>
         }
       >
         <form onSubmit={handleSubmit}>
-          <Input label="Account Name" name="name" value={form.name} onChange={handleChange} required />
+          <Input
+            label="Account Name"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            placeholder="e.g., Silicon Valley Bank - Operating"
+            required
+          />
           <div className="form-group">
-            <label>Type</label>
+            <label>Account Type</label>
             <select className="input" name="account_type" value={form.account_type} onChange={handleChange}>
               {ACCOUNT_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -165,14 +254,21 @@ export default function Accounts() {
             </select>
           </div>
           <Input
-            label="Opening Balance"
+            label="Current / Opening Balance ($)"
             name="balance"
             type="number"
             step="0.01"
             value={form.balance}
             onChange={handleChange}
+            placeholder="0.00"
           />
-          <Input label="Currency" name="currency" value={form.currency} onChange={handleChange} />
+          <Input
+            label="Currency Code"
+            name="currency"
+            value={form.currency}
+            onChange={handleChange}
+            placeholder="USD"
+          />
           {error && <p className="error-text">{error}</p>}
         </form>
       </Modal>

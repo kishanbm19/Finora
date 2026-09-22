@@ -16,6 +16,15 @@ import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
 import Input from "../components/common/Input";
 import Loader from "../components/common/Loader";
+import {
+  IconPlus,
+  IconEdit,
+  IconTrash,
+  IconArrowUpRight,
+  IconArrowDownRight,
+  IconWallet,
+  IconBank,
+} from "../components/common/Icons";
 
 const emptyForm = {
   type: "expense",
@@ -29,6 +38,8 @@ const emptyForm = {
 
 export default function Transactions() {
   const [filterAccountId, setFilterAccountId] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const { data: accounts, refetch: refetchAccounts } = useFetch(() => listAccounts(), []);
   const { data: customers } = useFetch(() => listCustomers(), []);
   const {
@@ -123,20 +134,51 @@ export default function Transactions() {
     return "Selected Account";
   };
 
+  // Metrics calculation
+  const totalInflow = (transactions || [])
+    .filter((t) => t.type === "income")
+    .reduce((acc, t) => acc + (t.amount || 0), 0);
+  const totalOutflow = (transactions || [])
+    .filter((t) => t.type === "expense")
+    .reduce((acc, t) => acc + (t.amount || 0), 0);
+  const netMovement = totalInflow - totalOutflow;
+
+  // Filter transactions
+  const filteredTransactions = (transactions || []).filter((tx) => {
+    if (filterType && tx.type !== filterType) return false;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const desc = (tx.description || "").toLowerCase();
+      const cat = (tx.category || "").toLowerCase();
+      const cust = (tx.customer_name || "").toLowerCase();
+      return desc.includes(term) || cat.includes(term) || cust.includes(term);
+    }
+    return true;
+  });
+
   const columns = [
-    { key: "transaction_date", header: "Date", render: (row) => formatDate(row.transaction_date) },
+    {
+      key: "transaction_date",
+      header: "Date",
+      render: (row) => (
+        <span style={{ color: "var(--color-text-secondary)", fontSize: 13, fontWeight: 500 }}>
+          {formatDate(row.transaction_date)}
+        </span>
+      ),
+    },
     {
       key: "type",
       header: "Type",
       render: (row) => (
         <span className={`badge ${row.type === "income" ? "badge-success" : "badge-danger"}`}>
-          {row.type}
+          <span className="badge-dot" />
+          {row.type === "income" ? "Income" : "Expense"}
         </span>
       ),
     },
     {
       key: "account",
-      header: "Account / Flow",
+      header: "Account / Route",
       render: (row) => {
         const isExpense = row.type === "expense";
         const isCash =
@@ -145,7 +187,7 @@ export default function Transactions() {
         const accountName = row.account_name || (isCash ? "Cash" : null);
 
         if (!accountName && !row.account_id) {
-          return <span className="account-tag unassigned-tag">⚪ Cash / Unassigned</span>;
+          return <span className="account-tag unassigned-tag">Unassigned Route</span>;
         }
 
         if (isCash) {
@@ -154,7 +196,9 @@ export default function Transactions() {
               className={`account-tag ${isExpense ? "cash-tag" : "cash-income-tag"}`}
               title={isExpense ? "Deducted from Cash" : "Deposited to Cash"}
             >
-              💵 {isExpense ? "Deducted from" : "Deposited to"} <strong>{accountName || "Cash"}</strong>
+              <IconWallet size={13} />
+              <span>{isExpense ? "Paid via" : "Deposited to"}</span>
+              <strong>{accountName || "Cash"}</strong>
             </span>
           );
         }
@@ -164,31 +208,56 @@ export default function Transactions() {
             className={`account-tag ${isExpense ? "bank-tag" : "bank-income-tag"}`}
             title={isExpense ? `Deducted from ${accountName}` : `Deposited to ${accountName}`}
           >
-            {isExpense ? "🔻 Deducted from" : "🟢 Deposited to"} <strong>{accountName}</strong>
+            <IconBank size={13} />
+            <span>{isExpense ? "Deducted from" : "Deposited to"}</span>
+            <strong>{accountName}</strong>
           </span>
         );
       },
     },
-    { key: "category", header: "Category" },
+    {
+      key: "category",
+      header: "Category",
+      render: (row) => (
+        <span
+          style={{
+            background: "#f1f5f9",
+            padding: "3px 8px",
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 500,
+            color: "var(--color-text-secondary)",
+            textTransform: "capitalize",
+          }}
+        >
+          {row.category}
+        </span>
+      ),
+    },
     {
       key: "description",
-      header: "Description / Customer",
+      header: "Description & Entity",
       render: (row) => (
         <div>
-          <div>{row.description || "—"}</div>
+          <div style={{ fontWeight: 500 }}>{row.description || "—"}</div>
           {row.customer_name && (
-            <span
-              className="account-tag"
+            <div
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
                 background: "#eff6ff",
                 color: "#1d4ed8",
-                borderColor: "#bfdbfe",
+                border: "1px solid #dbeafe",
+                borderRadius: 4,
+                padding: "1px 6px",
                 fontSize: 11,
                 marginTop: 3,
+                fontWeight: 600,
               }}
             >
               👤 {row.customer_name}
-            </span>
+            </div>
           )}
         </div>
       ),
@@ -196,21 +265,42 @@ export default function Transactions() {
     {
       key: "amount",
       header: "Amount",
-      render: (row) => (
-        <span style={{ fontWeight: 600, color: row.type === "income" ? "var(--color-success)" : "var(--color-text)" }}>
-          {row.type === "income" ? "+" : "-"}{formatCurrency(row.amount)}
-        </span>
-      ),
+      align: "right",
+      render: (row) => {
+        const isIncome = row.type === "income";
+        return (
+          <span
+            style={{
+              fontWeight: 700,
+              fontSize: 14,
+              color: isIncome ? "var(--color-success-text)" : "var(--color-danger-text)",
+            }}
+          >
+            {isIncome ? "+" : "-"}{formatCurrency(row.amount)}
+          </span>
+        );
+      },
     },
     {
       key: "actions",
       header: "",
+      align: "right",
       render: (row) => (
-        <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="secondary" onClick={() => openEditModal(row)}>
+        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => openEditModal(row)}
+            icon={<IconEdit size={14} />}
+          >
             Edit
           </Button>
-          <Button variant="danger" onClick={() => handleDelete(row.id)}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => handleDelete(row.id)}
+            icon={<IconTrash size={14} />}
+          >
             Delete
           </Button>
         </div>
@@ -223,47 +313,118 @@ export default function Transactions() {
       <div className="page-header">
         <div>
           <h1>Transactions</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--color-text-muted)" }}>
-            Track your financial entries, deductions, and deposits across accounts.
-          </p>
+          <p>Complete ledger of inflows, outflows, and financial entries across accounts.</p>
         </div>
-        <Button onClick={openCreateModal}>+ Add Transaction</Button>
+        <Button onClick={openCreateModal} icon={<IconPlus size={16} />}>
+          New Transaction
+        </Button>
       </div>
 
+      {/* Movement Summary Cards */}
+      <div className="grid grid-3" style={{ marginBottom: 20 }}>
+        <div className="summary-card tone-success" style={{ padding: 16 }}>
+          <div className="summary-card-header">
+            <span className="label">Total Inflow</span>
+            <IconArrowUpRight size={18} color="var(--color-success-text)" />
+          </div>
+          <div className="value" style={{ fontSize: 22 }}>+{formatCurrency(totalInflow)}</div>
+          <div className="sub-hint">Deposits, sales, client payments</div>
+        </div>
+
+        <div className="summary-card tone-danger" style={{ padding: 16 }}>
+          <div className="summary-card-header">
+            <span className="label">Total Outflow</span>
+            <IconArrowDownRight size={18} color="var(--color-danger-text)" />
+          </div>
+          <div className="value" style={{ fontSize: 22 }}>-{formatCurrency(totalOutflow)}</div>
+          <div className="sub-hint">Direct expenses, purchases, payouts</div>
+        </div>
+
+        <div
+          className={`summary-card ${netMovement >= 0 ? "tone-success" : "tone-danger"}`}
+          style={{ padding: 16 }}
+        >
+          <div className="summary-card-header">
+            <span className="label">Net Ledger Balance</span>
+          </div>
+          <div className="value" style={{ fontSize: 22 }}>
+            {netMovement >= 0 ? "+" : ""}{formatCurrency(netMovement)}
+          </div>
+          <div className="sub-hint">
+            {netMovement >= 0 ? "Positive cash margin" : "Negative net burn"}
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Bar */}
       <div className="filter-bar">
-        <div className="filter-group">
-          <span className="filter-label">Filter by Account:</span>
-          <select
+        <div className="filter-group" style={{ flex: 1, maxWidth: 320 }}>
+          <input
             className="input"
-            style={{ width: "auto", minWidth: 220 }}
-            value={filterAccountId}
-            onChange={(e) => setFilterAccountId(e.target.value)}
-          >
-            <option value="">All Accounts & Cash</option>
-            <option value="cash">💵 Cash Only</option>
-            {accounts &&
-              accounts
-                .filter((a) => a.account_type !== "cash")
-                .map((a) => (
-                  <option key={a.id} value={a.id}>
-                    🏦 {a.name} ({formatCurrency(a.balance, a.currency)})
-                  </option>
-                ))}
-            <option value="unassigned">⚪ Unassigned / Other</option>
-          </select>
+            type="text"
+            placeholder="Search description, category, customer..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div className="filter-group">
+            <span className="filter-label">Account:</span>
+            <select
+              className="input"
+              style={{ width: "auto", minWidth: 200 }}
+              value={filterAccountId}
+              onChange={(e) => setFilterAccountId(e.target.value)}
+            >
+              <option value="">All Accounts &amp; Cash</option>
+              <option value="cash">💵 Cash Only</option>
+              {accounts &&
+                accounts
+                  .filter((a) => a.account_type !== "cash")
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      🏦 {a.name} ({formatCurrency(a.balance, a.currency)})
+                    </option>
+                  ))}
+              <option value="unassigned">⚪ Unassigned / Other</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <span className="filter-label">Type:</span>
+            <select
+              className="input"
+              style={{ width: "auto", minWidth: 140 }}
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+            >
+              <option value="">All Types</option>
+              <option value="income">🟢 Income</option>
+              <option value="expense">🔻 Expense</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" style={{ padding: 0 }}>
         {loading ? (
-          <Loader />
+          <Loader label="Loading transaction entries…" />
         ) : (
-          <Table columns={columns} data={transactions} emptyMessage="No transactions yet." />
+          <Table
+            columns={columns}
+            data={filteredTransactions}
+            emptyMessage={
+              searchTerm || filterAccountId || filterType
+                ? "No transactions match your current filters."
+                : "No transactions recorded yet."
+            }
+          />
         )}
       </div>
 
       <Modal
-        title={editingId ? "Edit Transaction" : "Add Transaction"}
+        title={editingId ? "Edit Transaction" : "Record New Transaction"}
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
         footer={
@@ -272,7 +433,7 @@ export default function Transactions() {
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={saving}>
-              {saving ? "Saving…" : "Save Transaction"}
+              {saving ? "Saving…" : editingId ? "Update Entry" : "Save Transaction"}
             </Button>
           </>
         }
@@ -355,12 +516,14 @@ export default function Transactions() {
                   <div className="flow-balance-hint">
                     Current: {formatCurrency(selectedAccountObj.balance, selectedAccountObj.currency)} ➔
                     Projected:{" "}
-                    {formatCurrency(
-                      form.type === "expense"
-                        ? selectedAccountObj.balance - Number(form.amount)
-                        : selectedAccountObj.balance + Number(form.amount),
-                      selectedAccountObj.currency
-                    )}
+                    <strong>
+                      {formatCurrency(
+                        form.type === "expense"
+                          ? selectedAccountObj.balance - Number(form.amount)
+                          : selectedAccountObj.balance + Number(form.amount),
+                        selectedAccountObj.currency
+                      )}
+                    </strong>
                   </div>
                 )}
               </div>
@@ -368,7 +531,7 @@ export default function Transactions() {
           )}
 
           <Input
-            label="Amount"
+            label="Amount ($)"
             name="amount"
             type="number"
             step="0.01"
@@ -414,7 +577,7 @@ export default function Transactions() {
             name="description"
             value={form.description}
             onChange={handleChange}
-            placeholder="Optional notes or payee"
+            placeholder="Notes or payee details"
           />
 
           <Input
