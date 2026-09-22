@@ -30,12 +30,41 @@ export default function Register() {
 
   return (
     <div className="auth-shell">
-      <form className="card auth-card" onSubmit={handleSubmit}>
+      <form className="auth-card" onSubmit={handleSubmit}>
+        {/* Brand Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 800,
+              fontSize: 20,
+              boxShadow: "0 4px 12px rgba(79, 70, 229, 0.35)",
+            }}
+          >
+            F
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text)", letterSpacing: "-0.02em" }}>
+              Finora
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-primary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              Finance OS
+            </div>
+          </div>
+        </div>
+
         <h1>Create your account</h1>
-        <p className="subtitle">Start managing your business finances</p>
+        <p className="subtitle">Start optimizing your business financial operations</p>
 
         <Input
-          label="Full name"
+          label="Full Legal Name"
           name="fullName"
           value={form.fullName}
           onChange={handleChange}
@@ -43,19 +72,19 @@ export default function Register() {
           required
         />
         <Input
-          label="Business name (optional)"
+          label="Business / Enterprise Name"
           name="businessName"
           value={form.businessName}
           onChange={handleChange}
-          placeholder="Jane's Bakery"
+          placeholder="Acme Corp or Jane's Bakery"
         />
         <Input
-          label="Email"
+          label="Work Email Address"
           type="email"
           name="email"
           value={form.email}
           onChange={handleChange}
-          placeholder="you@business.com"
+          placeholder="jane@business.com"
           required
         />
         <Input
@@ -71,12 +100,15 @@ export default function Register() {
 
         {error && <p className="error-text">{error}</p>}
 
-        <Button type="submit" fullWidth disabled={submitting} style={{ marginTop: 8 }}>
-          {submitting ? "Creating account…" : "Create account"}
+        <Button type="submit" fullWidth disabled={submitting} style={{ marginTop: 12, height: 44, fontSize: 14 }}>
+          {submitting ? "Provisioning account…" : "Create Finora Account"}
         </Button>
 
-        <p style={{ marginTop: 16, fontSize: 14, textAlign: "center" }}>
-          Already have an account? <Link to="/login">Log in</Link>
+        <p style={{ marginTop: 20, fontSize: 13.5, textAlign: "center", color: "var(--color-text-muted)" }}>
+          Already have an account?{" "}
+          <Link to="/login" style={{ fontWeight: 600, color: "var(--color-primary)" }}>
+            Log in
+          </Link>
         </p>
       </form>
     </div>
