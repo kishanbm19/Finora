@@ -31,6 +31,13 @@ class Settings(BaseSettings):
         "https://finora-9n5mar7em-kishanbm19s-projects.vercel.app",
     ]
 
+    # LLM Settings
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+    LLM_PROVIDER: str = "auto"  # "auto", "openai", "gemini"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

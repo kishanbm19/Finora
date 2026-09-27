@@ -3,12 +3,12 @@ import {
   IconDashboard,
   IconTransactions,
   IconInvoice,
-  IconExpense,
   IconCustomers,
   IconAccounts,
   IconAnalytics,
   IconReports,
   IconSettings,
+  IconAI,
 } from "../common/Icons";
 
 const NAV_GROUPS = [
@@ -21,7 +21,6 @@ const NAV_GROUPS = [
     items: [
       { to: "/transactions", label: "Transactions", icon: IconTransactions },
       { to: "/invoices", label: "Invoices", icon: IconInvoice },
-      { to: "/expenses", label: "Expenses", icon: IconExpense },
       { to: "/customers", label: "Customers", icon: IconCustomers },
     ],
   },
@@ -35,7 +34,10 @@ const NAV_GROUPS = [
   },
   {
     title: "SYSTEM",
-    items: [{ to: "/settings", label: "Settings", icon: IconSettings }],
+    items: [
+      { to: "/ai", label: "AI Assistant", icon: IconAI },
+      { to: "/settings", label: "Settings", icon: IconSettings }
+    ],
   },
 ];
 

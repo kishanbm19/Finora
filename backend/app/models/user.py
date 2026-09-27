@@ -26,4 +26,3 @@ class User(Base):
     accounts = relationship("Account", back_populates="owner", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="owner", cascade="all, delete-orphan")
     invoices = relationship("Invoice", back_populates="owner", cascade="all, delete-orphan")
-    expenses = relationship("Expense", back_populates="owner", cascade="all, delete-orphan")

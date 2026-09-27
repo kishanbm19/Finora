@@ -27,7 +27,7 @@ def _resolve_account_id(db: Session, user_id: str, account_id: str | None) -> st
                 name="Cash",
                 account_type=AccountType.CASH,
                 balance=0.0,
-                currency="USD",
+                currency="INR",
             )
             db.add(cash_acc)
             db.flush()
@@ -66,7 +66,12 @@ def create_transaction(db: Session, user_id: str, payload: TransactionCreate) ->
     transaction = Transaction(user_id=user_id, **data)
     db.add(transaction)
 
-    signed_amount = transaction.amount if transaction.type == TransactionType.INCOME else -transaction.amount
+    signed_amount = 0.0
+    if transaction.type == TransactionType.INCOME:
+        signed_amount = transaction.amount
+    elif transaction.type == TransactionType.EXPENSE:
+        signed_amount = -transaction.amount
+
     _apply_balance_delta(db, transaction.account_id, signed_amount)
 
     db.commit()
@@ -119,7 +124,11 @@ def list_transactions(
 
 def update_transaction(db: Session, transaction: Transaction, payload: TransactionUpdate) -> Transaction:
     # Reverse the old balance effect before applying updates.
-    old_signed = transaction.amount if transaction.type == TransactionType.INCOME else -transaction.amount
+    old_signed = 0.0
+    if transaction.type == TransactionType.INCOME:
+        old_signed = transaction.amount
+    elif transaction.type == TransactionType.EXPENSE:
+        old_signed = -transaction.amount
     _apply_balance_delta(db, transaction.account_id, -old_signed)
 
     update_data = payload.model_dump(exclude_unset=True)
@@ -134,7 +143,11 @@ def update_transaction(db: Session, transaction: Transaction, payload: Transacti
     for field, value in update_data.items():
         setattr(transaction, field, value)
 
-    new_signed = transaction.amount if transaction.type == TransactionType.INCOME else -transaction.amount
+    new_signed = 0.0
+    if transaction.type == TransactionType.INCOME:
+        new_signed = transaction.amount
+    elif transaction.type == TransactionType.EXPENSE:
+        new_signed = -transaction.amount
     _apply_balance_delta(db, transaction.account_id, new_signed)
 
     db.commit()
@@ -143,7 +156,11 @@ def update_transaction(db: Session, transaction: Transaction, payload: Transacti
 
 
 def delete_transaction(db: Session, transaction: Transaction) -> None:
-    signed_amount = transaction.amount if transaction.type == TransactionType.INCOME else -transaction.amount
+    signed_amount = 0.0
+    if transaction.type == TransactionType.INCOME:
+        signed_amount = transaction.amount
+    elif transaction.type == TransactionType.EXPENSE:
+        signed_amount = -transaction.amount
     _apply_balance_delta(db, transaction.account_id, -signed_amount)
     db.delete(transaction)
     db.commit()

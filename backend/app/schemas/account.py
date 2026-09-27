@@ -9,7 +9,7 @@ class AccountBase(BaseModel):
     name: str
     account_type: AccountType = AccountType.BANK
     balance: float = 0.0
-    currency: str = "USD"
+    currency: str = "INR"
 
     @field_validator("name")
     @classmethod
@@ -23,7 +23,11 @@ class AccountBase(BaseModel):
     @classmethod
     def validate_currency(cls, v: str) -> str:
         v = (v or "").strip().upper()
-        return v or "USD"
+        if not v or v in ("INR", "RS", "RUPEES", "₹"):
+            return "INR"
+        if v != "INR":
+            raise ValueError("Only Indian Rupees (INR) is supported as valid currency.")
+        return "INR"
 
 
 class AccountCreate(AccountBase):
@@ -50,7 +54,11 @@ class AccountUpdate(BaseModel):
     def validate_currency(cls, v: str | None) -> str | None:
         if v is not None:
             v = v.strip().upper()
-            return v or "USD"
+            if not v or v in ("INR", "RS", "RUPEES", "₹"):
+                return "INR"
+            if v != "INR":
+                raise ValueError("Only Indian Rupees (INR) is supported as valid currency.")
+            return "INR"
         return v
 
 

@@ -2,7 +2,6 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from app.models.expense import Expense
 from app.models.transaction import Transaction, TransactionType
 
 
@@ -28,20 +27,12 @@ def profit_and_loss_report(db: Session, user_id: str, start: date, end: date) ->
         )
         .all()
     )
-    standalone_expenses = (
-        db.query(Expense)
-        .filter(Expense.user_id == user_id, Expense.expense_date >= start, Expense.expense_date <= end)
-        .all()
-    )
-
     total_income = sum(t.amount for t in income)
-    total_expenses = sum(t.amount for t in expense_transactions) + sum(e.amount for e in standalone_expenses)
+    total_expenses = sum(t.amount for t in expense_transactions)
 
     by_category: dict[str, float] = {}
     for t in expense_transactions:
         by_category[t.category] = by_category.get(t.category, 0.0) + t.amount
-    for e in standalone_expenses:
-        by_category[e.category] = by_category.get(e.category, 0.0) + e.amount
 
     return {
         "period_start": start.isoformat(),

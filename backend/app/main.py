@@ -13,10 +13,10 @@ from app.routers import (
     auth,
     customers,
     dashboard,
-    expenses,
     invoices,
     reports,
     transactions,
+    ai,
 )
 
 app = FastAPI(
@@ -56,7 +56,7 @@ app.include_router(customers.router)
 app.include_router(accounts.router)
 app.include_router(transactions.router)
 app.include_router(invoices.router)
-app.include_router(expenses.router)
 app.include_router(dashboard.router)
 app.include_router(reports.router)
 app.include_router(analytics.router)
+app.include_router(ai.router)

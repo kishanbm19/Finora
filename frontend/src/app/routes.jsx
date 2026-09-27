@@ -9,12 +9,12 @@ import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
 import Transactions from "../pages/Transactions";
 import Invoices from "../pages/Invoices";
-import Expenses from "../pages/Expenses";
 import Customers from "../pages/Customers";
 import Accounts from "../pages/Accounts";
 import Reports from "../pages/Reports";
 import Analytics from "../pages/Analytics";
 import Settings from "../pages/Settings";
+import AIAssistant from "../pages/AIAssistant";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -63,11 +63,11 @@ export default function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="invoices" element={<Invoices />} />
-        <Route path="expenses" element={<Expenses />} />
         <Route path="customers" element={<Customers />} />
         <Route path="accounts" element={<Accounts />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="ai" element={<AIAssistant />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

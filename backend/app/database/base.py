@@ -13,4 +13,4 @@ class Base(DeclarativeBase):
 
 # Import models so they register themselves on Base.metadata.
 # (placed at bottom to avoid circular imports)
-from app.models import user, customer, account, transaction, invoice, expense  # noqa: E402,F401
+from app.models import user, customer, account, transaction, invoice  # noqa: E402,F401

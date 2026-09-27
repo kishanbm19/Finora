@@ -11,6 +11,7 @@ from app.database.base import Base
 class TransactionType(str, enum.Enum):
     INCOME = "income"
     EXPENSE = "expense"
+    TRANSFER = "transfer"
 
 
 class Transaction(Base):

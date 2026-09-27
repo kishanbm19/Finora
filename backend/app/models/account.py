@@ -25,7 +25,7 @@ class Account(Base):
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     account_type: Mapped[AccountType] = mapped_column(Enum(AccountType), default=AccountType.BANK)
     balance: Mapped[float] = mapped_column(Float, default=0.0)
-    currency: Mapped[str] = mapped_column(String(10), default="USD")
+    currency: Mapped[str] = mapped_column(String(10), default="INR")
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 

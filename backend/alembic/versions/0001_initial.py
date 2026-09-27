@@ -61,7 +61,7 @@ def upgrade() -> None:
         sa.Column("id", sa.String(36), primary_key=True),
         sa.Column("user_id", sa.String(36), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("account_id", sa.String(36), sa.ForeignKey("accounts.id"), nullable=True),
-        sa.Column("type", sa.Enum("INCOME", "EXPENSE", name="transactiontype"), nullable=False),
+        sa.Column("type", sa.Enum("INCOME", "EXPENSE", "TRANSFER", name="transactiontype"), nullable=False),
         sa.Column("category", sa.String(100), nullable=False, server_default="general"),
         sa.Column("amount", sa.Float(), nullable=False),
         sa.Column("description", sa.String(400), nullable=True),
@@ -91,22 +91,10 @@ def upgrade() -> None:
     op.create_index("ix_invoices_customer_id", "invoices", ["customer_id"])
     op.create_index("ix_invoices_invoice_number", "invoices", ["invoice_number"], unique=True)
 
-    op.create_table(
-        "expenses",
-        sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("user_id", sa.String(36), sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("category", sa.String(100), nullable=False, server_default="general"),
-        sa.Column("vendor", sa.String(200), nullable=True),
-        sa.Column("amount", sa.Float(), nullable=False),
-        sa.Column("description", sa.String(400), nullable=True),
-        sa.Column("expense_date", sa.Date(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-    )
-    op.create_index("ix_expenses_user_id", "expenses", ["user_id"])
+
 
 
 def downgrade() -> None:
-    op.drop_table("expenses")
     op.drop_table("invoices")
     op.drop_table("transactions")
     op.drop_table("accounts")
